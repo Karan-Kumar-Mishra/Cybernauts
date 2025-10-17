@@ -31,10 +31,11 @@ function Flow() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { project } = useReactFlow();
+  console.log("state=>",state)
 
   useEffect(() => {
     loadGraphData();
-  }, []);
+  }, [state.users.length]);
 
   const loadGraphData = async () => {
     try {
@@ -141,7 +142,6 @@ function App() {
       <Toaster position="top-right" />
       <Sidebar />
       <div style={{ flex: 1 }}>
-        {/* ✅ Wrap Flow inside ReactFlowProvider */}
         <ReactFlowProvider>
           <Flow />
         </ReactFlowProvider>

@@ -9,30 +9,32 @@ export class UserController {
     this.userService = new UserService();
   }
 
-  getAllUsers = (req: Request, res: Response): void => {
+  getAllUsers = async (req: Request, res: Response): Promise<void> => {
     try {
-      const users = this.userService.getAllUsers();
+      const users = await this.userService.getAllUsers();
       res.json(users);
     } catch (error) {
+      console.error('Error fetching users:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   };
 
-  createUser = (req: Request, res: Response): void => {
+  createUser = async (req: Request, res: Response): Promise<void> => {
     try {
       const userData: CreateUserRequest = req.body;
-      const user = this.userService.createUser(userData);
+      const user = await this.userService.createUser(userData);
       res.status(201).json(user);
     } catch (error: any) {
+      console.error('Error creating user:', error);
       res.status(400).json({ error: error.message });
     }
   };
 
-  updateUser = (req: Request, res: Response): void => {
+  updateUser = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const updates: UpdateUserRequest = req.body;
-      const updatedUser = this.userService.updateUser(id, updates);
+      const updatedUser = await this.userService.updateUser(id, updates);
       
       if (!updatedUser) {
         res.status(404).json({ error: 'User not found' });
@@ -41,14 +43,15 @@ export class UserController {
       
       res.json(updatedUser);
     } catch (error: any) {
+      console.error('Error updating user:', error);
       res.status(400).json({ error: error.message });
     }
   };
 
-  deleteUser = (req: Request, res: Response): void => {
+  deleteUser = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const success = this.userService.deleteUser(id);
+      const success = await this.userService.deleteUser(id);
       
       if (!success) {
         res.status(404).json({ error: 'User not found' });
@@ -57,6 +60,7 @@ export class UserController {
       
       res.status(204).send();
     } catch (error: any) {
+      console.error('Error deleting user:', error);
       if (error.message.includes('active relationships')) {
         res.status(409).json({ error: error.message });
       } else {
@@ -65,7 +69,7 @@ export class UserController {
     }
   };
 
-  createRelationship = (req: Request, res: Response): void => {
+  createRelationship = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const { friendId } = req.body;
@@ -75,9 +79,10 @@ export class UserController {
         return;
       }
       
-      this.userService.createRelationship(id, friendId);
+      await this.userService.createRelationship(id, friendId);
       res.status(201).json({ message: 'Relationship created successfully' });
     } catch (error: any) {
+      console.error('Error creating relationship:', error);
       if (error.message.includes('not found')) {
         res.status(404).json({ error: error.message });
       } else if (error.message.includes('already exists') || error.message.includes('self')) {
@@ -88,7 +93,7 @@ export class UserController {
     }
   };
 
-  removeRelationship = (req: Request, res: Response): void => {
+  removeRelationship = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const { friendId } = req.body;
@@ -98,19 +103,63 @@ export class UserController {
         return;
       }
       
-      this.userService.removeRelationship(id, friendId);
+      await this.userService.removeRelationship(id, friendId);
       res.status(204).send();
     } catch (error: any) {
+      console.error('Error removing relationship:', error);
       res.status(400).json({ error: error.message });
     }
   };
 
-  getGraphData = (req: Request, res: Response): void => {
+  getGraphData = async (req: Request, res: Response): Promise<void> => {
     try {
-      const graphData = this.userService.getGraphData();
+      const graphData = await this.userService.getGraphData();
       res.json(graphData);
     } catch (error) {
+      console.error('Error fetching graph data:', error);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+  getAllHobbies = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const hobbies = await this.userService.getAllHobbies();
+      res.json(hobbies);
+    } catch (error) {
+      console.error('Error fetching hobbies:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+  addHobby = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { name } = req.body;
+      if (!name || name.trim().length === 0) {
+        res.status(400).json({ error: 'Hobby name is required' });
+        return;
+      }
+      
+      await this.userService.addHobby(name);
+      res.status(201).json({ message: 'Hobby added successfully' });
+    } catch (error: any) {
+      console.error('Error adding hobby:', error);
+      res.status(400).json({ error: error.message });
+    }
+  };
+
+  removeHobby = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { name } = req.body;
+      if (!name || name.trim().length === 0) {
+        res.status(400).json({ error: 'Hobby name is required' });
+        return;
+      }
+      
+      await this.userService.removeHobby(name);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error('Error removing hobby:', error);
+      res.status(400).json({ error: error.message });
     }
   };
 }

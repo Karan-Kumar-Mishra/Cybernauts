@@ -8,54 +8,66 @@ export class UserService {
     this.userModel = new UserModel();
   }
 
-  getAllUsers(): User[] {
-    return this.userModel.getAllUsers();
+  async getAllUsers(): Promise<User[]> {
+    return await this.userModel.getAllUsers();
   }
 
-  createUser(userData: CreateUserRequest): User {
+  async createUser(userData: CreateUserRequest): Promise<User> {
     this.validateUserData(userData);
-    const user = this.userModel.createUser(userData);
-    this.userModel.updateUserPopularityScore(user.id);
+    const user = await this.userModel.createUser(userData);
+    await this.userModel.updatePopularityScore(user.id);
     return user;
   }
 
-  updateUser(id: string, updates: UpdateUserRequest): User | null {
+  async updateUser(id: string, updates: UpdateUserRequest): Promise<User | null> {
     if (updates.hobbies) {
       this.validateHobbies(updates.hobbies);
     }
     
-    const updatedUser = this.userModel.updateUser(id, updates);
+    const updatedUser = await this.userModel.updateUser(id, updates);
     if (updatedUser) {
-      this.userModel.updateUserPopularityScore(id);
+      await this.userModel.updatePopularityScore(id);
       // Update popularity scores of friends as well
-      const friends = this.userModel.getFriends(id);
-      friends.forEach(friendId => {
-        this.userModel.updateUserPopularityScore(friendId);
-      });
+      const friends = await this.userModel.getFriends(id);
+      for (const friendId of friends) {
+        await this.userModel.updatePopularityScore(friendId);
+      }
     }
     return updatedUser;
   }
 
-  deleteUser(id: string): boolean {
-    return this.userModel.deleteUser(id);
+  async deleteUser(id: string): Promise<boolean> {
+    return await this.userModel.deleteUser(id);
   }
 
-  createRelationship(userId: string, friendId: string): void {
-    this.userModel.createRelationship(userId, friendId);
+  async createRelationship(userId: string, friendId: string): Promise<void> {
+    await this.userModel.createRelationship(userId, friendId);
     // Update popularity scores for both users
-    this.userModel.updateUserPopularityScore(userId);
-    this.userModel.updateUserPopularityScore(friendId);
+    await this.userModel.updatePopularityScore(userId);
+    await this.userModel.updatePopularityScore(friendId);
   }
 
-  removeRelationship(userId: string, friendId: string): void {
-    this.userModel.removeRelationship(userId, friendId);
+  async removeRelationship(userId: string, friendId: string): Promise<void> {
+    await this.userModel.removeRelationship(userId, friendId);
     // Update popularity scores for both users
-    this.userModel.updateUserPopularityScore(userId);
-    this.userModel.updateUserPopularityScore(friendId);
+    await this.userModel.updatePopularityScore(userId);
+    await this.userModel.updatePopularityScore(friendId);
   }
 
-  getGraphData(): any {
-    return this.userModel.getGraphData();
+  async getGraphData(): Promise<any> {
+    return await this.userModel.getGraphData();
+  }
+
+  async getAllHobbies(): Promise<string[]> {
+    return await this.userModel.getAllHobbies();
+  }
+
+  async addHobby(name: string): Promise<void> {
+    await this.userModel.addHobby(name);
+  }
+
+  async removeHobby(name: string): Promise<void> {
+    await this.userModel.removeHobby(name);
   }
 
   private validateUserData(userData: CreateUserRequest): void {

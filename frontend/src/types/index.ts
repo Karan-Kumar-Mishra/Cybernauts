@@ -5,7 +5,7 @@ export interface User {
   hobbies: string[];
   friends: string[];
   createdAt: string;
-  popularityScore: number;
+  popularityScore: number | string; // Allow both number and string
 }
 
 export interface GraphNode {
