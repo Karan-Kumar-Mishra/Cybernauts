@@ -11,7 +11,6 @@ router.delete('/users/:id', userController.deleteUser);
 router.post('/users/:id/link', userController.createRelationship);
 router.delete('/users/:id/unlink', userController.removeRelationship);
 router.get('/graph', userController.getGraphData);
-
 router.get('/hobbies', userController.getAllHobbies);
 router.post('/hobbies', userController.addHobby);
 router.delete('/hobbies', userController.removeHobby);

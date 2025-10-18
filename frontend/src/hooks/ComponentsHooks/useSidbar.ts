@@ -160,7 +160,7 @@ function useSidbar() {
         handleAddHobby, handleDragEnd, handleDragOver, handleDragStart,
         handleKeyPress, handleDrop, handleRemoveHobby, filteredHobbies, dispatch, state,
         setDraggedHobby, searchTerm, setSearchTerm, isLoading, draggedHobby, newHobby,
-        loadAvailableHobbies
+        loadAvailableHobbies,setNewHobby
     };
 }
 export default useSidbar;

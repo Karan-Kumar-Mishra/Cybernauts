@@ -16,13 +16,8 @@ export class UserService {
   async createUser(userData: CreateUserRequest): Promise<User> {
     this.validateUserData(userData);
     const user = await this.userModel.createUser(userData);
-    
-    // Update popularity score for the new user
     await this.userModel.updatePopularityScore(user.id);
-    
-    // Invalidate graph cache to ensure fresh data
     await this.userModel.invalidateGraphCache();
-    
     return user;
   }
 
@@ -33,18 +28,13 @@ export class UserService {
     
     const updatedUser = await this.userModel.updateUser(id, updates);
     if (updatedUser) {
-      // Recalculate popularity score for this user
       await this.userModel.updatePopularityScore(id);
-      
-      // Also recalculate popularity scores for all friends
       const friends = await this.userModel.getFriends(id);
       console.log(`Updating popularity scores for ${friends.length} friends of user ${id}`);
       
       for (const friendId of friends) {
         await this.userModel.updatePopularityScore(friendId);
       }
-      
-      // Invalidate graph cache
       await this.userModel.invalidateGraphCache();
     }
     return updatedUser;
@@ -53,7 +43,6 @@ export class UserService {
   async deleteUser(id: string): Promise<boolean> {
     const result = await this.userModel.deleteUser(id);
     if (result) {
-      // Invalidate graph cache
       await this.userModel.invalidateGraphCache();
     }
     return result;
@@ -61,51 +50,34 @@ export class UserService {
 
   async createRelationship(userId: string, friendId: string): Promise<void> {
     await this.userModel.createRelationship(userId, friendId);
-    
-    // Update popularity scores for both users
     await this.userModel.updatePopularityScore(userId);
     await this.userModel.updatePopularityScore(friendId);
-    
-    // Also update popularity scores for friends of both users
     const [userFriends, friendFriends] = await Promise.all([
       this.userModel.getFriends(userId),
       this.userModel.getFriends(friendId)
     ]);
-    
-    // Update all affected users
     const allAffectedUsers = new Set([...userFriends, ...friendFriends]);
     console.log(`Updating popularity scores for ${allAffectedUsers.size} affected users`);
-    
     for (const affectedUserId of allAffectedUsers) {
       await this.userModel.updatePopularityScore(affectedUserId);
     }
-    
-    // Invalidate graph cache
     await this.userModel.invalidateGraphCache();
   }
 
   async removeRelationship(userId: string, friendId: string): Promise<void> {
     await this.userModel.removeRelationship(userId, friendId);
-    
-    // Update popularity scores for both users
     await this.userModel.updatePopularityScore(userId);
     await this.userModel.updatePopularityScore(friendId);
-    
-    // Also update popularity scores for friends of both users
     const [userFriends, friendFriends] = await Promise.all([
       this.userModel.getFriends(userId),
       this.userModel.getFriends(friendId)
     ]);
-    
-    // Update all affected users
     const allAffectedUsers = new Set([...userFriends, ...friendFriends]);
     console.log(`Updating popularity scores for ${allAffectedUsers.size} affected users`);
     
     for (const affectedUserId of allAffectedUsers) {
       await this.userModel.updatePopularityScore(affectedUserId);
     }
-    
-    // Invalidate graph cache
     await this.userModel?.invalidateGraphCache();
   }
 
@@ -119,13 +91,11 @@ export class UserService {
 
   async addHobby(name: string): Promise<void> {
     await this.userModel.addHobby(name);
-    // Invalidate graph cache since hobbies affect popularity scores
     await this.userModel.invalidateGraphCache();
   }
 
   async removeHobby(name: string): Promise<void> {
     await this.userModel.removeHobby(name);
-    // Invalidate graph cache since hobbies affect popularity scores
     await this.userModel.invalidateGraphCache();
   }
 

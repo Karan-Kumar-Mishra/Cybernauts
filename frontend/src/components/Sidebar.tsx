@@ -4,7 +4,7 @@ export const Sidebar: React.FC = () => {
 
   const { handleAddHobby, handleDragEnd, handleDragOver, handleDragStart,
     handleKeyPress, handleDrop, handleRemoveHobby, filteredHobbies, dispatch, state,
-    searchTerm, setSearchTerm, isLoading, draggedHobby, newHobby, loadAvailableHobbies } = useSidbar();
+    searchTerm, setSearchTerm, isLoading, draggedHobby, newHobby,setNewHobby, loadAvailableHobbies } = useSidbar();
 
 
   return (

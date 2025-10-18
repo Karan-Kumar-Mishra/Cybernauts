@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/UserService';
 import { CreateUserRequest, UpdateUserRequest } from '../types';
-import { pool } from '../config/database';
+import pool from '../config/pool';
 export class UserController {
   private userService: UserService;
 

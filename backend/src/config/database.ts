@@ -1,23 +1,5 @@
-import { Pool } from 'pg';
-import dotenv from 'dotenv';
-import { UserModel } from '../models/UserModel';
+import pool from './pool';
 
-dotenv.config();
-
-// Parse the database URL to modify SSL settings
-const databaseUrl = process.env.DB_URL;
-
-export const pool = new Pool({
-  connectionString: databaseUrl,
-  ssl: {
-    rejectUnauthorized: false, // This allows self-signed certificates
-  },
-  connectionTimeoutMillis: 10000,
-  idleTimeoutMillis: 30000,
-  max: 20,
-});
-
-// Initialize database tables
 export const initializeDatabase = async (): Promise<void> => {
   const client = await pool.connect();
   try {
