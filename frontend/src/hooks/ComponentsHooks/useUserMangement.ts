@@ -1,8 +1,5 @@
-
-
-
-import { useApp } from '../../contexts/AppContext';
-import { CreateUserRequest } from '../../types';
+import useApp from '../../contexts/useApp';
+import { CreateUserRequest } from '../../interfaces/CreateUserRequest';
 import { apiService } from '../../services/apiService';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
@@ -32,13 +29,13 @@ function useUserMangement() {
 
         try {
             dispatch({ type: 'SET_LOADING', payload: true });
-            const newUser = await apiService.createUser(formData);
+            await apiService.createUser(formData);
 
-            // Refresh graph data
+
             const graphData = await apiService.getGraphData();
             dispatch({ type: 'SET_GRAPH_DATA', payload: graphData });
 
-            // Refresh users list
+
             const users = await apiService.getAllUsers();
             dispatch({ type: 'SET_USERS', payload: users });
 
@@ -61,11 +58,11 @@ function useUserMangement() {
             toast.loading('Removing the User...', { id: toastId });
             await apiService.deleteUser(userId);
 
-            // Refresh graph data
+
             const graphData = await apiService.getGraphData();
             dispatch({ type: 'SET_GRAPH_DATA', payload: graphData });
 
-            // Refresh users list
+
             const users = await apiService.getAllUsers();
             dispatch({ type: 'SET_USERS', payload: users });
             toast.dismiss(toastId);
@@ -99,7 +96,7 @@ function useUserMangement() {
         }));
     };
 
-    // Helper function to safely format popularity score
+
     const formatPopularityScore = (score: any): string => {
         if (score === null || score === undefined) return '0.0';
 
@@ -113,22 +110,22 @@ function useUserMangement() {
         return numScore.toFixed(1);
     };
 
-    // Helper function to ensure hobbies is always an array
+
     const getHobbiesDisplay = (hobbies: any): string => {
         if (!hobbies) return 'None';
         if (Array.isArray(hobbies)) return hobbies.join(', ') || 'None';
         return 'None';
     };
 
-    // Helper function to ensure friends is always an array
+
     const getFriendsCount = (friends: any): number => {
         if (!friends) return 0;
         if (Array.isArray(friends)) return friends.length;
         return 0;
     };
     return {
-        state, isCreating, setIsCreating, handleCreateUser, handleDeleteUser,newHobby,
-        addHobby, removeHobby, formatPopularityScore, getHobbiesDisplay, getFriendsCount,formData,setFormData
+        state, isCreating, setIsCreating, handleCreateUser, handleDeleteUser, newHobby,
+        addHobby, removeHobby, formatPopularityScore, getHobbiesDisplay, getFriendsCount, formData, setFormData
     }
 }
 export default useUserMangement;

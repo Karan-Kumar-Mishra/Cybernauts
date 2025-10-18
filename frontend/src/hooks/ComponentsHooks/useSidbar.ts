@@ -1,4 +1,4 @@
-import { useApp } from "../../contexts/AppContext";
+import useApp from "../../contexts/useApp";
 import { apiService } from "../../services/apiService";
 import toast from "react-hot-toast";
 import { useState, useEffect } from "react";

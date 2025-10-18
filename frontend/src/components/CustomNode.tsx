@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { useApp } from '../contexts/AppContext';
+import useApp from '../contexts/useApp';
 import { apiService } from '../services/apiService';
 import toast from 'react-hot-toast';
 
