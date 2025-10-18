@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/UserService';
 import { CreateUserRequest, UpdateUserRequest } from '../types';
-
+import { pool } from '../config/database';
 export class UserController {
   private userService: UserService;
 
@@ -35,12 +35,12 @@ export class UserController {
       const { id } = req.params;
       const updates: UpdateUserRequest = req.body;
       const updatedUser = await this.userService.updateUser(id, updates);
-      
+
       if (!updatedUser) {
         res.status(404).json({ error: 'User not found' });
         return;
       }
-      
+
       res.json(updatedUser);
     } catch (error: any) {
       console.error('Error updating user:', error);
@@ -52,12 +52,12 @@ export class UserController {
     try {
       const { id } = req.params;
       const success = await this.userService.deleteUser(id);
-      
+
       if (!success) {
         res.status(404).json({ error: 'User not found' });
         return;
       }
-      
+
       res.status(204).send();
     } catch (error: any) {
       console.error('Error deleting user:', error);
@@ -73,12 +73,12 @@ export class UserController {
     try {
       const { id } = req.params;
       const { friendId } = req.body;
-      
+
       if (!friendId) {
         res.status(400).json({ error: 'friendId is required' });
         return;
       }
-      
+
       await this.userService.createRelationship(id, friendId);
       res.status(201).json({ message: 'Relationship created successfully' });
     } catch (error: any) {
@@ -97,12 +97,12 @@ export class UserController {
     try {
       const { id } = req.params;
       const { friendId } = req.body;
-      
+
       if (!friendId) {
         res.status(400).json({ error: 'friendId is required' });
         return;
       }
-      
+
       await this.userService.removeRelationship(id, friendId);
       res.status(204).send();
     } catch (error: any) {
@@ -134,13 +134,17 @@ export class UserController {
   addHobby = async (req: Request, res: Response): Promise<void> => {
     try {
       const { name } = req.body;
+
       if (!name || name.trim().length === 0) {
         res.status(400).json({ error: 'Hobby name is required' });
         return;
       }
-      
-      await this.userService.addHobby(name);
-      res.status(201).json({ message: 'Hobby added successfully' });
+
+      await this.userService.addHobby(name.trim());
+      res.status(201).json({
+        message: 'Hobby added successfully',
+        hobby: name.trim()
+      });
     } catch (error: any) {
       console.error('Error adding hobby:', error);
       res.status(400).json({ error: error.message });
@@ -154,7 +158,7 @@ export class UserController {
         res.status(400).json({ error: 'Hobby name is required' });
         return;
       }
-      
+
       await this.userService.removeHobby(name);
       res.status(204).send();
     } catch (error: any) {
@@ -162,4 +166,38 @@ export class UserController {
       res.status(400).json({ error: error.message });
     }
   };
+  debugDatabaseState = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Get all users
+      const usersResult = await pool.query('SELECT id, username FROM users');
+      const users = usersResult.rows;
+
+      // Get all relationships
+      const relationshipsResult = await pool.query('SELECT user_id, friend_id FROM relationships');
+      const relationships = relationshipsResult.rows;
+
+      // Get table counts
+      const usersCount = await pool.query('SELECT COUNT(*) FROM users');
+      const relationshipsCount = await pool.query('SELECT COUNT(*) FROM relationships');
+
+      res.json({
+        database: {
+          users: {
+            count: parseInt(usersCount.rows[0].count),
+            list: users
+          },
+          relationships: {
+            count: parseInt(relationshipsCount.rows[0].count),
+            list: relationships
+          }
+        },
+        graphData: await this.userService.getGraphData()
+      });
+
+    } catch (error: any) {
+      console.error('Debug database state error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
 }

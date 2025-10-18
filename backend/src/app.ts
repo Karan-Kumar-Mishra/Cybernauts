@@ -15,8 +15,8 @@ const PORT = process.env.PORT || 5000;
 const initializeApp = async () => {
   try {
     await initializeDatabase();
-    console.log('Database initialized successfully');
 
+    console.log('Database initialized successfully');
     await redisClient.connect();
     console.log('Redis connected successfully');
   } catch (error) {

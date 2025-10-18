@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import { UserModel } from '../models/UserModel';
 
 dotenv.config();
 
@@ -20,8 +21,9 @@ export const pool = new Pool({
 export const initializeDatabase = async (): Promise<void> => {
   const client = await pool.connect();
   try {
-    console.log('Testing database connection with SSL...');
     
+    console.log('Testing database connection with SSL...');
+
     // Test connection first
     const result = await client.query('SELECT NOW()');
     console.log('Database connection successful at:', result.rows[0].now);

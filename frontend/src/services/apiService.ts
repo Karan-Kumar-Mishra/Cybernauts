@@ -1,14 +1,48 @@
 import axios from 'axios';
 import { User, CreateUserRequest, UpdateUserRequest, GraphData } from '../types';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Use environment variable or fallback to localhost
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000,
 });
+
+// Add request interceptor for logging
+api.interceptors.request.use(
+  (config) => {
+    console.log(`Making ${config.method?.toUpperCase()} request to: ${config.url}`);
+    return config;
+  },
+  (error) => {
+    console.error('Request error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for error handling
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    console.error('API Error:', error.response?.data || error.message);
+    
+    if (error.response?.status === 404) {
+      console.error('Resource not found');
+    } else if (error.response?.status === 500) {
+      console.error('Server error');
+    } else if (error.code === 'ECONNREFUSED') {
+      console.error('Cannot connect to backend server');
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 export const apiService = {
   // User operations
@@ -33,6 +67,7 @@ export const apiService = {
 
   // Relationship operations
   async createRelationship(userId: string, friendId: string): Promise<void> {
+    console.log("creating connection edges....")
     await api.post(`/users/${userId}/link`, { friendId });
   },
 
@@ -44,5 +79,26 @@ export const apiService = {
   async getGraphData(): Promise<GraphData> {
     const response = await api.get('/graph');
     return response.data;
+  },
+
+  // Hobby operations - FIXED THESE
+  async getAllHobbies(): Promise<string[]> {
+    try {
+      const response = await api.get('/hobbies');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch hobbies from backend, returning empty array');
+      return [];
+    }
+  },
+
+  async addHobby(name: string): Promise<void> {
+    const response = await api.post('/hobbies', { name });
+    console.log("hobby reponse=>",response.data)
+    return response.data;
+  },
+
+  async removeHobby(name: string): Promise<void> {
+    await api.delete('/hobbies', { data: { name } });
   },
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/apiService';
 import toast from 'react-hot-toast';
@@ -7,86 +7,154 @@ export const Sidebar: React.FC = () => {
   const { state, dispatch } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [newHobby, setNewHobby] = useState('');
+  const [availableHobbies, setAvailableHobbies] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [draggedHobby, setDraggedHobby] = useState<string | null>(null);
 
-  // Helper function to safely get all hobbies
-  const getAllHobbies = (): string[] => {
+  // Load available hobbies from backend
+  const loadAvailableHobbies = async () => {
     try {
-      const allHobbies = Array.from(
+      const hobbies = await apiService.getAllHobbies();
+      setAvailableHobbies(hobbies);
+    } catch (error) {
+      console.error('Error loading hobbies:', error);
+      // If backend fails, fall back to extracting from users
+      const hobbiesFromUsers = Array.from(
         new Set(state.users.flatMap(user => 
           Array.isArray(user.hobbies) ? user.hobbies : []
         ))
-      ).filter(hobby => 
-        typeof hobby === 'string' && 
-        hobby.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      return allHobbies;
-    } catch (error) {
-      console.error('Error getting hobbies:', error);
-      return [];
+      setAvailableHobbies(hobbiesFromUsers);
     }
   };
 
-  const allHobbies = getAllHobbies();
+  // Load hobbies when component mounts or users change
+  useEffect(() => {
+    loadAvailableHobbies();
+  }, [state.users]);
+
+  // Filter hobbies based on search term
+  const filteredHobbies = availableHobbies.filter(hobby => 
+    hobby.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleDragStart = (event: React.DragEvent, hobby: string) => {
+    console.log('🟢 Drag started for hobby:', hobby);
+    
+    // Set both text/plain and application/hobby data
+    event.dataTransfer.setData('text/plain', hobby);
     event.dataTransfer.setData('application/hobby', hobby);
-    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.effectAllowed = 'copy';
+    
+    setDraggedHobby(hobby);
+    
+    // Add visual feedback
+    const element = event.currentTarget as HTMLElement;
+    element.style.opacity = '0.4';
+    element.style.backgroundColor = '#e3f2fd';
+  };
+
+  const handleDragEnd = (event: React.DragEvent) => {
+    console.log('🔴 Drag ended');
+    
+    const element = event.currentTarget as HTMLElement;
+    element.style.opacity = '1';
+    element.style.backgroundColor = 'white';
+    
+    setDraggedHobby(null);
   };
 
   const handleAddHobby = async () => {
-    if (!newHobby.trim()) {
+    const hobbyName = newHobby.trim();
+    
+    if (!hobbyName) {
       toast.error('Please enter a hobby name');
       return;
     }
 
+    if (hobbyName.length < 2) {
+      toast.error('Hobby name must be at least 2 characters long');
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      // Add to global hobby list
-      await apiService.addHobby(newHobby.trim());
-      toast.success(`Hobby "${newHobby}" added successfully`);
+      // Add to backend first
+      await apiService.addHobby(hobbyName);
+      
+      // Update local state
+      setAvailableHobbies(prev => {
+        const newHobbies = [...prev, hobbyName];
+        return Array.from(new Set(newHobbies)).sort();
+      });
+      
       setNewHobby('');
-    } catch (error) {
-      toast.error('Failed to add hobby');
-    }
-  };
-
-  const handleNodeDrop = async (event: React.DragEvent, nodeId: string) => {
-    event.preventDefault();
-    const hobby = event.dataTransfer.getData('application/hobby');
-    
-    if (hobby) {
-      try {
-        const user = state.users.find(u => u.id === nodeId);
-        if (user) {
-          // Ensure hobbies is an array
-          const currentHobbies = Array.isArray(user.hobbies) ? user.hobbies : [];
-          
-          if (currentHobbies.includes(hobby)) {
-            toast.error(`User already has hobby "${hobby}"`);
-            return;
-          }
-
-          const updatedHobbies = [...currentHobbies, hobby];
-          await apiService.updateUser(nodeId, { hobbies: updatedHobbies });
-          toast.success(`Added "${hobby}" to ${user.username}`);
-          
-          // Refresh graph data to update popularity scores
-          const graphData = await apiService.getGraphData();
-          dispatch({ type: 'SET_GRAPH_DATA', payload: graphData });
-          
-          // Refresh users list
-          const users = await apiService.getAllUsers();
-          dispatch({ type: 'SET_USERS', payload: users });
-        }
-      } catch (error) {
-        console.error('Error adding hobby to user:', error);
-        toast.error('Failed to add hobby to user');
+      toast.success(`Hobby "${hobbyName}" added successfully!`);
+      
+      // Refresh the hobbies list from backend to ensure consistency
+      setTimeout(() => {
+        loadAvailableHobbies();
+      }, 100);
+      
+    } catch (error: any) {
+      console.error('Error adding hobby:', error);
+      
+      if (error.response?.status === 400) {
+        toast.error(error.response.data.error || 'Failed to add hobby');
+      } else if (error.code === 'ECONNREFUSED') {
+        // If backend is not available, add to local state only
+        setAvailableHobbies(prev => {
+          const newHobbies = [...prev, hobbyName];
+          return Array.from(new Set(newHobbies)).sort();
+        });
+        setNewHobby('');
+        toast.success(`Hobby "${hobbyName}" added locally (backend unavailable)`);
+      } else {
+        toast.error('Failed to add hobby. Please try again.');
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const onDragOver = (event: React.DragEvent) => {
+  const handleRemoveHobby = async (hobby: string) => {
+    if (!window.confirm(`Are you sure you want to remove the hobby "${hobby}"?`)) {
+      return;
+    }
+
+    try {
+      await apiService.removeHobby(hobby);
+      
+      // Update local state
+      setAvailableHobbies(prev => prev.filter(h => h !== hobby));
+      toast.success(`Hobby "${hobby}" removed successfully`);
+      
+      // Refresh the list
+      setTimeout(() => {
+        loadAvailableHobbies();
+      }, 100);
+      
+    } catch (error: any) {
+      console.error('Error removing hobby:', error);
+      toast.error('Failed to remove hobby. Please try again.');
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    console.log('Hobby dropped in sidebar area');
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      handleAddHobby();
+    }
   };
 
   return (
@@ -110,31 +178,43 @@ export const Sidebar: React.FC = () => {
             type="text"
             value={newHobby}
             onChange={(e) => setNewHobby(e.target.value)}
+            onKeyPress={handleKeyPress}
             placeholder="Enter hobby name"
+            disabled={isLoading}
             style={{
               flex: 1,
               padding: '8px',
               border: '1px solid #ccc',
-              borderRadius: '4px'
-            }}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') handleAddHobby();
+              borderRadius: '4px',
+              opacity: isLoading ? 0.6 : 1
             }}
           />
           <button
             onClick={handleAddHobby}
+            disabled={isLoading || !newHobby.trim()}
             style={{
-              padding: '8px 12px',
-              backgroundColor: '#007bff',
+              padding: '8px 16px',
+              backgroundColor: isLoading ? '#6c757d' : '#007bff',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: 'pointer'
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              opacity: isLoading ? 0.6 : 1
             }}
           >
-            Add
+            {isLoading ? '...' : 'Add'}
           </button>
         </div>
+        {newHobby.trim() && (
+          <div style={{ 
+            fontSize: '12px', 
+            color: '#666', 
+            marginTop: '4px',
+            fontStyle: 'italic'
+          }}>
+            Press Enter or click Add to add "{newHobby.trim()}"
+          </div>
+        )}
       </div>
 
       {/* Search */}
@@ -155,69 +235,175 @@ export const Sidebar: React.FC = () => {
 
       {/* Hobby List */}
       <div>
-        <h4 style={{ marginBottom: '12px', color: '#555' }}>
-          Available Hobbies ({allHobbies.length})
-        </h4>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '12px' 
+        }}>
+          <h4 style={{ margin: 0, color: '#555' }}>
+            Available Hobbies ({filteredHobbies.length})
+          </h4>
+          <button
+            onClick={loadAvailableHobbies}
+            style={{
+              padding: '4px 8px',
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '12px',
+              cursor: 'pointer'
+            }}
+          >
+            Refresh
+          </button>
+        </div>
+        
         <div
-          onDrop={onDragOver}
-          onDragOver={onDragOver}
-          style={{ minHeight: '200px' }}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          style={{ 
+            minHeight: '200px',
+            maxHeight: '400px',
+            overflowY: 'auto',
+            border: '2px dashed transparent',
+            borderRadius: '8px',
+            padding: '8px'
+          }}
         >
-          {allHobbies.length === 0 ? (
+          {filteredHobbies.length === 0 ? (
             <div style={{ 
               textAlign: 'center', 
               color: '#999', 
               fontStyle: 'italic',
               padding: '20px'
             }}>
-              No hobbies found
+              {searchTerm ? 'No hobbies match your search' : 'No hobbies available. Add some above!'}
             </div>
           ) : (
-            allHobbies.map(hobby => (
+            filteredHobbies.map(hobby => (
               <div
                 key={hobby}
                 draggable
                 onDragStart={(e) => handleDragStart(e, hobby)}
+                onDragEnd={handleDragEnd}
                 style={{
-                  padding: '8px 12px',
-                  margin: '4px 0',
+                  padding: '12px 16px',
+                  margin: '8px 0',
                   backgroundColor: 'white',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '4px',
+                  border: draggedHobby === hobby ? '2px solid #007bff' : '2px solid #e2e8f0',
+                  borderRadius: '8px',
                   cursor: 'grab',
                   userSelect: 'none',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s ease',
+                  boxShadow: draggedHobby === hobby 
+                    ? '0 4px 12px rgba(0, 123, 255, 0.3)' 
+                    : '0 2px 4px rgba(0,0,0,0.1)',
+                  transform: draggedHobby === hobby ? 'scale(0.95)' : 'scale(1)'
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#e9ecef';
+                  if (draggedHobby !== hobby) {
+                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                    e.currentTarget.style.borderColor = '#007bff';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                  }
                 }}
                 onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = 'white';
+                  if (draggedHobby !== hobby) {
+                    e.currentTarget.style.backgroundColor = 'white';
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                  }
                 }}
               >
-                {hobby}
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between' 
+                }}>
+                  <span style={{ 
+                    fontWeight: '600', 
+                    color: '#2d3748',
+                    fontSize: '14px'
+                  }}>
+                    {hobby}
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ 
+                      fontSize: '12px', 
+                      color: '#718096',
+                      cursor: 'grab'
+                    }}>
+                      ⋮⋮
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveHobby(hobby);
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#dc3545',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        padding: '2px 6px',
+                        borderRadius: '3px',
+                        width: '24px',
+                        height: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      title={`Remove ${hobby}`}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f8d7da';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
               </div>
             ))
           )}
         </div>
       </div>
 
-      {/* Instructions */}
+      {/* Drag Instructions */}
       <div style={{ 
         marginTop: '20px', 
         padding: '15px', 
-        backgroundColor: '#e7f3ff',
-        border: '1px dashed #007bff',
-        borderRadius: '4px',
+        backgroundColor: draggedHobby ? '#e7f6e9' : '#e7f3ff',
+        border: draggedHobby ? '2px solid #28a745' : '1px dashed #007bff',
+        borderRadius: '8px',
         fontSize: '14px',
-        color: '#0066cc'
+        color: draggedHobby ? '#2e7d32' : '#0066cc',
+        textAlign: 'center'
       }}>
-        <p style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>How to use:</p>
-        <ol style={{ margin: 0, paddingLeft: '20px' }}>
-          <li>Drag hobbies onto user nodes</li>
-          <li>Connect users by dragging between nodes</li>
-          <li>Watch popularity scores update automatically</li>
-        </ol>
+        {draggedHobby ? (
+          <>
+            <div style={{ fontSize: '18px', marginBottom: '8px' }}>🎯</div>
+            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+              Dragging: "{draggedHobby}"
+            </div>
+            <div>Drop it on any user node in the graph</div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: '18px', marginBottom: '8px' }}>💡</div>
+            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+              How to use drag & drop:
+            </div>
+            <div>Drag hobbies onto user nodes to add them</div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ export class UserModel {
 
   async getAllUsers(): Promise<User[]> {
     const cacheKey = 'users:all';
-    
+
     // Try to get from cache first
     try {
       const cachedUsers = await redisClient.get(cacheKey);
@@ -50,7 +50,7 @@ export class UserModel {
 
   async getUserById(id: string): Promise<User | null> {
     const cacheKey = `user:${id}`;
-    
+
     // Try cache first
     try {
       const cachedUser = await redisClient.get(cacheKey);
@@ -94,7 +94,7 @@ export class UserModel {
 
   async createUser(userData: CreateUserRequest): Promise<User> {
     const { username, age, hobbies } = userData;
-    
+
     const result = await pool.query(`
       INSERT INTO users (username, age, hobbies, popularity_score)
       VALUES ($1, $2, $3, $4)
@@ -224,30 +224,43 @@ export class UserModel {
       throw new Error('User not found');
     }
 
+    console.log(`🔍 Checking for existing relationships between ${userId} and ${friendId}`);
+
     // Check if relationship already exists (in either direction)
     const existingRelationship = await pool.query(`
-      SELECT id FROM relationships 
-      WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1)
-    `, [userId, friendId]);
+    SELECT id FROM relationships 
+    WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1)
+  `, [userId, friendId]);
+
+    console.log(`📋 Existing relationships found: ${existingRelationship.rows.length}`);
 
     if (existingRelationship.rows.length > 0) {
       throw new Error('Relationship already exists');
     }
 
     // Create bidirectional relationship
+    console.log(`🔄 Creating bidirectional relationship: ${userId} ↔ ${friendId}`);
     await pool.query('BEGIN');
     try {
-      await pool.query(
-        'INSERT INTO relationships (user_id, friend_id) VALUES ($1, $2)',
+      // First relationship: user -> friend
+      const result1 = await pool.query(
+        'INSERT INTO relationships (user_id, friend_id) VALUES ($1, $2) RETURNING id',
         [userId, friendId]
       );
-      await pool.query(
-        'INSERT INTO relationships (user_id, friend_id) VALUES ($1, $2)',
+      console.log(`✅ Created relationship 1: ${userId} → ${friendId}, ID: ${result1.rows[0].id}`);
+
+      // Second relationship: friend -> user (bidirectional)
+      const result2 = await pool.query(
+        'INSERT INTO relationships (user_id, friend_id) VALUES ($1, $2) RETURNING id',
         [friendId, userId]
       );
+      console.log(`✅ Created relationship 2: ${friendId} → ${userId}, ID: ${result2.rows[0].id}`);
+
       await pool.query('COMMIT');
+      console.log(`🎉 Successfully created bidirectional relationship between ${user.username} and ${friend.username}`);
     } catch (error) {
       await pool.query('ROLLBACK');
+      console.error('❌ Failed to create relationship:', error);
       throw error;
     }
 
@@ -256,9 +269,25 @@ export class UserModel {
     await this.updatePopularityScore(friendId);
 
     // Invalidate cache
-    await this.invalidateUserCache();
+    await this.invalidateGraphCache();
     await redisClient.del(`user:${userId}`);
     await redisClient.del(`user:${friendId}`);
+  }
+  async invalidateGraphCache(): Promise<void> {
+    const cacheKeys = ['graph:data', 'users:all'];
+
+    console.log('Invalidating graph cache...');
+
+    for (const key of cacheKeys) {
+      try {
+        if (redisClient.isReady()) {
+          await redisClient.del(key);
+          console.log(`Successfully invalidated cache key: ${key}`);
+        }
+      } catch (error) {
+        console.warn(`Failed to invalidate cache key: ${key}`, error);
+      }
+    }
   }
 
   async removeRelationship(userId: string, friendId: string): Promise<void> {
@@ -295,7 +324,6 @@ export class UserModel {
     );
     return result.rows.map((row: any) => row.friend_id);
   }
-
   async calculatePopularityScore(userId: string): Promise<number> {
     const user = await this.getUserById(userId);
     if (!user) return 0;
@@ -305,100 +333,163 @@ export class UserModel {
 
     // Calculate shared hobbies with friends
     let totalSharedHobbies = 0;
-    
+
+    console.log(`Calculating popularity for ${user.username}: ${uniqueFriends} friends`);
+
     for (const friendId of friends) {
       const friend = await this.getUserById(friendId);
       if (friend) {
-        const sharedHobbies = user.hobbies.filter((hobby: string) => 
-          friend.hobbies.includes(hobby)
+        const userHobbies = Array.isArray(user.hobbies) ? user.hobbies : [];
+        const friendHobbies = Array.isArray(friend.hobbies) ? friend.hobbies : [];
+
+        const sharedHobbies = userHobbies.filter(hobby =>
+          friendHobbies.includes(hobby)
         );
         totalSharedHobbies += sharedHobbies.length;
+
+        if (sharedHobbies.length > 0) {
+          console.log(`  Shared ${sharedHobbies.length} hobbies with ${friend.username}: ${sharedHobbies.join(', ')}`);
+        }
       }
     }
 
-    return uniqueFriends + (totalSharedHobbies * 0.5);
+    const score = uniqueFriends + (totalSharedHobbies * 0.5);
+    console.log(`Final popularity score for ${user.username}: ${score} (friends: ${uniqueFriends}, shared hobbies: ${totalSharedHobbies})`);
+
+    return score;
   }
 
   async updatePopularityScore(userId: string): Promise<void> {
-    const score = await this.calculatePopularityScore(userId);
-    
-    await pool.query(
-      'UPDATE users SET popularity_score = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [score, userId]
-    );
+    try {
+      const score = await this.calculatePopularityScore(userId);
 
-    // Invalidate cache
-    await redisClient.del(`user:${userId}`);
+      await pool.query(
+        'UPDATE users SET popularity_score = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [score, userId]
+      );
+
+      console.log(`Updated popularity score for user ${userId} to ${score}`);
+
+      // Invalidate cache for this user
+      await redisClient.del(`user:${userId}`);
+    } catch (error) {
+      console.error(`Error updating popularity score for user ${userId}:`, error);
+    }
   }
 
   async getGraphData(): Promise<any> {
     const cacheKey = 'graph:data';
-    
+
     // Try cache first
     try {
-      const cachedGraph = await redisClient.get(cacheKey);
-      if (cachedGraph) {
-        return cachedGraph;
+      if (redisClient.isReady()) {
+        const cachedGraph = await redisClient.get(cacheKey);
+        if (cachedGraph) {
+          console.log('Returning cached graph data');
+          return cachedGraph;
+        }
       }
     } catch (error) {
       console.warn('Redis cache miss for graph data');
     }
 
-    // Get all users with their friends
+    console.log('🔄 Fetching fresh graph data from database');
+
+    // Get all users with their calculated popularity scores
     const usersResult = await pool.query(`
-      SELECT 
-        id,
-        username,
-        age,
-        hobbies,
-        popularity_score as "popularityScore"
-      FROM users
-    `);
+    SELECT 
+      id,
+      username,
+      age,
+      hobbies,
+      popularity_score as "popularityScore"
+    FROM users
+    ORDER BY username
+  `);
 
     const users = usersResult.rows;
+    console.log(`👥 Found ${users.length} users in database`);
 
-    // Get all relationships
+    // Get all relationships - FIXED: Remove the WHERE clause that filters relationships
     const relationshipsResult = await pool.query(`
-      SELECT DISTINCT 
-        LEAST(user_id, friend_id) as source,
-        GREATEST(user_id, friend_id) as target
-      FROM relationships
-    `);
+    SELECT 
+      user_id as source,
+      friend_id as target
+    FROM relationships
+    ORDER BY user_id, friend_id
+  `);
 
-    const nodes = users.map((user: any) => ({
-      id: user.id,
-      type: user.popularityScore > 5 ? 'highScore' : 'lowScore',
-      data: {
-        label: `${user.username} (${user.age})`,
-        username: user.username,
-        age: user.age,
-        popularityScore: parseFloat(user.popularityScore),
-        hobbies: user.hobbies || []
-      },
-      position: { 
-        x: Math.random() * 800, 
-        y: Math.random() * 600 
+    console.log(`🔗 Found ${relationshipsResult.rows.length} relationships in database:`);
+
+    if (relationshipsResult.rows.length > 0) {
+      relationshipsResult.rows.forEach((rel: any) => {
+        console.log(`   ${rel.source} → ${rel.target}`);
+      });
+    } else {
+      console.log('   No relationships found in database');
+    }
+
+    // Generate positions for nodes
+    const nodes = users.map((user: any, index: number) => {
+      const gridSize = Math.ceil(Math.sqrt(users.length));
+      const row = Math.floor(index / gridSize);
+      const col = index % gridSize;
+
+      const popularityScore = parseFloat(user.popularityScore) || 0;
+
+      return {
+        id: user.id,
+        type: popularityScore > 5 ? 'highScore' : 'lowScore',
+        data: {
+          label: `${user.username} (${user.age})`,
+          username: user.username,
+          age: user.age,
+          popularityScore: popularityScore,
+          hobbies: user.hobbies || []
+        },
+        position: {
+          x: col * 200 + 50,
+          y: row * 150 + 50
+        }
+      };
+    });
+
+    // Create edges - ensure we don't create duplicates
+    const edgeMap = new Map();
+    const edges = relationshipsResult.rows.map((rel: any, index: number) => {
+      // Create a unique key for the edge to avoid duplicates
+      const edgeKey = [rel.source, rel.target].sort().join('-');
+
+      if (!edgeMap.has(edgeKey)) {
+        edgeMap.set(edgeKey, true);
+        return {
+          id: `edge-${rel.source}-${rel.target}-${index}`,
+          source: rel.source,
+          target: rel.target,
+          type: 'smoothstep',
+          style: { stroke: '#555', strokeWidth: 2 }
+        };
       }
-    }));
+      return null;
+    }).filter(Boolean); // Remove null entries
 
-    const edges = relationshipsResult.rows.map((rel: any, index: number) => ({
-      id: `edge-${index}`,
-      source: rel.source,
-      target: rel.target,
-      type: 'smoothstep'
-    }));
+    console.log(`🎯 Final graph data: ${nodes.length} nodes, ${edges.length} edges`);
 
     const graphData = { nodes, edges };
 
     // Cache the graph data
     try {
-      await redisClient.set(cacheKey, graphData, this.CACHE_TTL);
+      if (redisClient.isReady()) {
+        await redisClient.set(cacheKey, graphData, this.CACHE_TTL);
+        console.log('✅ Graph data cached successfully');
+      }
     } catch (error) {
       console.warn('Failed to cache graph data');
     }
 
     return graphData;
   }
+
 
   // Hobby management methods
   async getAllHobbies(): Promise<string[]> {
@@ -411,27 +502,48 @@ export class UserModel {
       'INSERT INTO hobbies (name) VALUES ($1) ON CONFLICT (name) DO NOTHING',
       [name]
     );
-    
+
     // Invalidate relevant caches
     await this.invalidateUserCache();
   }
 
   async removeHobby(name: string): Promise<void> {
     await pool.query('DELETE FROM hobbies WHERE name = $1', [name]);
-    
+
     // Invalidate relevant caches
     await this.invalidateUserCache();
   }
 
   private async invalidateUserCache(): Promise<void> {
     const cacheKeys = ['users:all', 'graph:data'];
-    
+
     for (const key of cacheKeys) {
       try {
         await redisClient.del(key);
       } catch (error) {
         console.warn(`Failed to invalidate cache key: ${key}`);
       }
+    }
+  }
+  async testDatabaseConnection(): Promise<void> {
+    try {
+      console.log('🔍 Testing database connection...');
+
+      // Test basic connection
+      const connectionTest = await pool.query('SELECT NOW() as current_time');
+      console.log('✅ Database connection test passed:', connectionTest.rows[0].current_time);
+
+      // Test users table
+      const usersTest = await pool.query('SELECT COUNT(*) as user_count FROM users');
+      console.log(`✅ Users table test passed: ${usersTest.rows[0].user_count} users`);
+
+      // Test relationships table
+      const relationshipsTest = await pool.query('SELECT COUNT(*) as relationship_count FROM relationships');
+      console.log(`✅ Relationships table test passed: ${relationshipsTest.rows[0].relationship_count} relationships`);
+
+    } catch (error) {
+      console.error('❌ Database connection test failed:', error);
+      throw error;
     }
   }
 }
