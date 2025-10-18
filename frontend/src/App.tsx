@@ -1,6 +1,6 @@
 
 import {
-  ReactFlowProvider, // ✅ import this
+  ReactFlowProvider, 
 } from 'reactflow';
 import { Toaster } from 'react-hot-toast';
 import { Sidebar } from './components/Sidebar';
@@ -20,7 +20,7 @@ function App() {
         </ReactFlowProvider>
       </div>
       <UserManagement />
-      <DebugPanel />
+      {/* <DebugPanel /> */}
     </div>
   );
 }

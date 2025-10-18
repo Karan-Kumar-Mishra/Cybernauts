@@ -1,161 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useApp } from '../contexts/AppContext';
-import { apiService } from '../services/apiService';
-import toast from 'react-hot-toast';
+import useSidbar from "../hooks/ComponentsHooks/useSidbar";
 
 export const Sidebar: React.FC = () => {
-  const { state, dispatch } = useApp();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [newHobby, setNewHobby] = useState('');
-  const [availableHobbies, setAvailableHobbies] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [draggedHobby, setDraggedHobby] = useState<string | null>(null);
 
-  // Load available hobbies from backend
-  const loadAvailableHobbies = async () => {
-    try {
-      const hobbies = await apiService.getAllHobbies();
-      setAvailableHobbies(hobbies);
-    } catch (error) {
-      console.error('Error loading hobbies:', error);
-      // If backend fails, fall back to extracting from users
-      const hobbiesFromUsers = Array.from(
-        new Set(state.users.flatMap(user => 
-          Array.isArray(user.hobbies) ? user.hobbies : []
-        ))
-      );
-      setAvailableHobbies(hobbiesFromUsers);
-    }
-  };
+  const { handleAddHobby, handleDragEnd, handleDragOver, handleDragStart,
+    handleKeyPress, handleDrop, handleRemoveHobby, filteredHobbies, dispatch, state,
+    searchTerm, setSearchTerm, isLoading, draggedHobby, newHobby, loadAvailableHobbies } = useSidbar();
 
-  // Load hobbies when component mounts or users change
-  useEffect(() => {
-    loadAvailableHobbies();
-  }, [state.users]);
-
-  // Filter hobbies based on search term
-  const filteredHobbies = availableHobbies.filter(hobby => 
-    hobby.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleDragStart = (event: React.DragEvent, hobby: string) => {
-    console.log('🟢 Drag started for hobby:', hobby);
-    
-    // Set both text/plain and application/hobby data
-    event.dataTransfer.setData('text/plain', hobby);
-    event.dataTransfer.setData('application/hobby', hobby);
-    event.dataTransfer.effectAllowed = 'copy';
-    
-    setDraggedHobby(hobby);
-    
-    // Add visual feedback
-    const element = event.currentTarget as HTMLElement;
-    element.style.opacity = '0.4';
-    element.style.backgroundColor = '#e3f2fd';
-  };
-
-  const handleDragEnd = (event: React.DragEvent) => {
-    console.log('🔴 Drag ended');
-    
-    const element = event.currentTarget as HTMLElement;
-    element.style.opacity = '1';
-    element.style.backgroundColor = 'white';
-    
-    setDraggedHobby(null);
-  };
-
-  const handleAddHobby = async () => {
-    const hobbyName = newHobby.trim();
-    
-    if (!hobbyName) {
-      toast.error('Please enter a hobby name');
-      return;
-    }
-
-    if (hobbyName.length < 2) {
-      toast.error('Hobby name must be at least 2 characters long');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Add to backend first
-      await apiService.addHobby(hobbyName);
-      
-      // Update local state
-      setAvailableHobbies(prev => {
-        const newHobbies = [...prev, hobbyName];
-        return Array.from(new Set(newHobbies)).sort();
-      });
-      
-      setNewHobby('');
-      toast.success(`Hobby "${hobbyName}" added successfully!`);
-      
-      // Refresh the hobbies list from backend to ensure consistency
-      setTimeout(() => {
-        loadAvailableHobbies();
-      }, 100);
-      
-    } catch (error: any) {
-      console.error('Error adding hobby:', error);
-      
-      if (error.response?.status === 400) {
-        toast.error(error.response.data.error || 'Failed to add hobby');
-      } else if (error.code === 'ECONNREFUSED') {
-        // If backend is not available, add to local state only
-        setAvailableHobbies(prev => {
-          const newHobbies = [...prev, hobbyName];
-          return Array.from(new Set(newHobbies)).sort();
-        });
-        setNewHobby('');
-        toast.success(`Hobby "${hobbyName}" added locally (backend unavailable)`);
-      } else {
-        toast.error('Failed to add hobby. Please try again.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRemoveHobby = async (hobby: string) => {
-    if (!window.confirm(`Are you sure you want to remove the hobby "${hobby}"?`)) {
-      return;
-    }
-
-    try {
-      await apiService.removeHobby(hobby);
-      
-      // Update local state
-      setAvailableHobbies(prev => prev.filter(h => h !== hobby));
-      toast.success(`Hobby "${hobby}" removed successfully`);
-      
-      // Refresh the list
-      setTimeout(() => {
-        loadAvailableHobbies();
-      }, 100);
-      
-    } catch (error: any) {
-      console.error('Error removing hobby:', error);
-      toast.error('Failed to remove hobby. Please try again.');
-    }
-  };
-
-  const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
-  };
-
-  const handleDrop = (event: React.DragEvent) => {
-    event.preventDefault();
-    console.log('Hobby dropped in sidebar area');
-  };
-
-  const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter') {
-      handleAddHobby();
-    }
-  };
 
   return (
     <div style={{
@@ -167,7 +17,7 @@ export const Sidebar: React.FC = () => {
       overflowY: 'auto'
     }}>
       <h3 style={{ marginBottom: '20px', color: '#333' }}>Hobby Manager</h3>
-      
+
       {/* Add New Hobby */}
       <div style={{ marginBottom: '20px' }}>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
@@ -206,9 +56,9 @@ export const Sidebar: React.FC = () => {
           </button>
         </div>
         {newHobby.trim() && (
-          <div style={{ 
-            fontSize: '12px', 
-            color: '#666', 
+          <div style={{
+            fontSize: '12px',
+            color: '#666',
             marginTop: '4px',
             fontStyle: 'italic'
           }}>
@@ -235,11 +85,11 @@ export const Sidebar: React.FC = () => {
 
       {/* Hobby List */}
       <div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '12px' 
+          marginBottom: '12px'
         }}>
           <h4 style={{ margin: 0, color: '#555' }}>
             Available Hobbies ({filteredHobbies.length})
@@ -259,11 +109,11 @@ export const Sidebar: React.FC = () => {
             Refresh
           </button>
         </div>
-        
+
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
-          style={{ 
+          style={{
             minHeight: '200px',
             maxHeight: '400px',
             overflowY: 'auto',
@@ -273,9 +123,9 @@ export const Sidebar: React.FC = () => {
           }}
         >
           {filteredHobbies.length === 0 ? (
-            <div style={{ 
-              textAlign: 'center', 
-              color: '#999', 
+            <div style={{
+              textAlign: 'center',
+              color: '#999',
               fontStyle: 'italic',
               padding: '20px'
             }}>
@@ -297,8 +147,8 @@ export const Sidebar: React.FC = () => {
                   cursor: 'grab',
                   userSelect: 'none',
                   transition: 'all 0.2s ease',
-                  boxShadow: draggedHobby === hobby 
-                    ? '0 4px 12px rgba(0, 123, 255, 0.3)' 
+                  boxShadow: draggedHobby === hobby
+                    ? '0 4px 12px rgba(0, 123, 255, 0.3)'
                     : '0 2px 4px rgba(0,0,0,0.1)',
                   transform: draggedHobby === hobby ? 'scale(0.95)' : 'scale(1)'
                 }}
@@ -319,21 +169,21 @@ export const Sidebar: React.FC = () => {
                   }
                 }}
               >
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between' 
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
                 }}>
-                  <span style={{ 
-                    fontWeight: '600', 
+                  <span style={{
+                    fontWeight: '600',
                     color: '#2d3748',
                     fontSize: '14px'
                   }}>
                     {hobby}
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ 
-                      fontSize: '12px', 
+                    <span style={{
+                      fontSize: '12px',
                       color: '#718096',
                       cursor: 'grab'
                     }}>
@@ -377,9 +227,9 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Drag Instructions */}
-      <div style={{ 
-        marginTop: '20px', 
-        padding: '15px', 
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
         backgroundColor: draggedHobby ? '#e7f6e9' : '#e7f3ff',
         border: draggedHobby ? '2px solid #28a745' : '1px dashed #007bff',
         borderRadius: '8px',

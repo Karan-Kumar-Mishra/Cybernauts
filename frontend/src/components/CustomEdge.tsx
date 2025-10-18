@@ -24,9 +24,6 @@ const CustomEdge: React.FC<EdgeProps> = ({
 
   const onEdgeClick = (event: React.MouseEvent, id: string) => {
     event.stopPropagation();
-    console.log('🗑️ Custom edge delete button clicked:', id);
-    
-    // Dispatch custom event that Flow component can listen to
     const deleteEvent = new CustomEvent('edgeDelete', { detail: { edgeId: id } });
     window.dispatchEvent(deleteEvent);
   };
