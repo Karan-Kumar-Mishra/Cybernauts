@@ -16,7 +16,7 @@ export const UserManagement: React.FC = () => {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.username.trim()) {
       toast.error('Username is required');
       return;
@@ -30,15 +30,15 @@ export const UserManagement: React.FC = () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       const newUser = await apiService.createUser(formData);
-      
+
       // Refresh graph data
       const graphData = await apiService.getGraphData();
       dispatch({ type: 'SET_GRAPH_DATA', payload: graphData });
-      
+
       // Refresh users list
       const users = await apiService.getAllUsers();
       dispatch({ type: 'SET_USERS', payload: users });
-      
+
       toast.success(`User "${formData.username}" created successfully`);
       setIsCreating(false);
       setFormData({ username: '', age: 25, hobbies: [] });
@@ -53,23 +53,26 @@ export const UserManagement: React.FC = () => {
     if (!window.confirm(`Are you sure you want to delete "${username}"?`)) {
       return;
     }
-
+    const toastId = `connection-${Date.now()}`;
     try {
+      toast.loading('Removing the User...', { id: toastId });
       await apiService.deleteUser(userId);
-      
+
       // Refresh graph data
       const graphData = await apiService.getGraphData();
       dispatch({ type: 'SET_GRAPH_DATA', payload: graphData });
-      
+
       // Refresh users list
       const users = await apiService.getAllUsers();
       dispatch({ type: 'SET_USERS', payload: users });
-      
+      toast.dismiss(toastId);
       toast.success('User deleted successfully');
     } catch (error: any) {
       if (error.response?.status === 409) {
+        toast.dismiss(toastId);
         toast.error('Cannot delete user with active relationships');
       } else {
+        toast.dismiss(toastId);
         toast.error('Failed to delete user');
       }
     }
@@ -96,14 +99,14 @@ export const UserManagement: React.FC = () => {
   // Helper function to safely format popularity score
   const formatPopularityScore = (score: any): string => {
     if (score === null || score === undefined) return '0.0';
-    
+
     const numScore = typeof score === 'string' ? parseFloat(score) : Number(score);
-    
+
     if (isNaN(numScore)) {
       console.warn('Invalid popularity score:', score);
       return '0.0';
     }
-    
+
     return numScore.toFixed(1);
   };
 
@@ -151,7 +154,7 @@ export const UserManagement: React.FC = () => {
           + Create New User
         </button>
       ) : (
-        <form onSubmit={handleCreateUser} style={{ 
+        <form onSubmit={handleCreateUser} style={{
           marginBottom: '20px',
           backgroundColor: 'white',
           padding: '15px',
@@ -159,7 +162,7 @@ export const UserManagement: React.FC = () => {
           border: '1px solid #dee2e6'
         }}>
           <h4 style={{ marginBottom: '15px', color: '#333' }}>Create New User</h4>
-          
+
           <div style={{ marginBottom: '12px' }}>
             <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
               Username *
@@ -169,11 +172,11 @@ export const UserManagement: React.FC = () => {
               value={formData.username}
               onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
               required
-              style={{ 
-                width: '100%', 
-                padding: '8px', 
-                border: '1px solid #ccc', 
-                borderRadius: '4px' 
+              style={{
+                width: '100%',
+                padding: '8px',
+                border: '1px solid #ccc',
+                borderRadius: '4px'
               }}
             />
           </div>
@@ -189,11 +192,11 @@ export const UserManagement: React.FC = () => {
               min="1"
               max="150"
               required
-              style={{ 
-                width: '100%', 
-                padding: '8px', 
-                border: '1px solid #ccc', 
-                borderRadius: '4px' 
+              style={{
+                width: '100%',
+                padding: '8px',
+                border: '1px solid #ccc',
+                borderRadius: '4px'
               }}
             />
           </div>
@@ -208,11 +211,11 @@ export const UserManagement: React.FC = () => {
                 value={newHobby}
                 onChange={(e) => setNewHobby(e.target.value)}
                 placeholder="Enter hobby"
-                style={{ 
-                  flex: 1, 
-                  padding: '8px', 
-                  border: '1px solid #ccc', 
-                  borderRadius: '4px' 
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px'
                 }}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
@@ -224,11 +227,11 @@ export const UserManagement: React.FC = () => {
               <button
                 type="button"
                 onClick={addHobby}
-                style={{ 
-                  padding: '8px 12px', 
-                  backgroundColor: '#007bff', 
-                  color: 'white', 
-                  border: 'none', 
+                style={{
+                  padding: '8px 12px',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
                   borderRadius: '4px',
                   cursor: 'pointer'
                 }}
@@ -236,7 +239,7 @@ export const UserManagement: React.FC = () => {
                 Add
               </button>
             </div>
-            
+
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
               {formData.hobbies.map(hobby => (
                 <div
@@ -254,10 +257,10 @@ export const UserManagement: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => removeHobby(hobby)}
-                    style={{ 
-                      marginLeft: '4px', 
-                      background: 'none', 
-                      border: 'none', 
+                    style={{
+                      marginLeft: '4px',
+                      background: 'none',
+                      border: 'none',
                       cursor: 'pointer',
                       fontSize: '14px',
                       color: '#666'
@@ -312,9 +315,9 @@ export const UserManagement: React.FC = () => {
         </h4>
         <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
           {state.users.length === 0 ? (
-            <div style={{ 
-              textAlign: 'center', 
-              color: '#999', 
+            <div style={{
+              textAlign: 'center',
+              color: '#999',
               fontStyle: 'italic',
               padding: '20px'
             }}>

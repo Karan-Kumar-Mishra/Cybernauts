@@ -126,7 +126,7 @@ function Flow() {
         console.log('✅ Backend relationship created successfully');
 
         // Wait a moment for backend processing
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Refresh ALL data from backend
         console.log('🔄 Refreshing graph data and users...');
@@ -193,7 +193,7 @@ function Flow() {
         console.log('✅ Relationship removed from backend');
 
         // Wait for backend processing
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Refresh data from backend
         console.log('🔄 Refreshing data after removal...');

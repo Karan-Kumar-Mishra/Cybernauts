@@ -9,7 +9,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  //timeout: 20000,
 });
 
 // Add request interceptor for logging
@@ -67,7 +67,6 @@ export const apiService = {
 
   // Relationship operations
   async createRelationship(userId: string, friendId: string): Promise<void> {
-    console.log("creating connection edges....")
     await api.post(`/users/${userId}/link`, { friendId });
   },
 
@@ -94,7 +93,6 @@ export const apiService = {
 
   async addHobby(name: string): Promise<void> {
     const response = await api.post('/hobbies', { name });
-    console.log("hobby reponse=>",response.data)
     return response.data;
   },
 
