@@ -59,3 +59,37 @@
   border-color: #007bff !important;
   box-shadow: 0 0 20px rgba(0, 123, 255, 0.5) !important;
 }
+/* Edge hover effects */
+.react-flow__edge.selected {
+  stroke: #ff0066;
+  stroke-width: 3;
+}
+
+.react-flow__edge:hover {
+  stroke: #007bff;
+  stroke-width: 3;
+  cursor: pointer;
+}
+
+/* Edge label styling */
+.react-flow__edge-label {
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* Custom edge delete button animations */
+@keyframes pulse-red {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.react-flow__edge.selected .edge-delete-button {
+  animation: pulse-red 1s infinite;
+}
