@@ -26,12 +26,12 @@ function useSidbar() {
         }
     };
 
-    // Load hobbies when component mounts or users change
+    
     useEffect(() => {
         loadAvailableHobbies();
     }, [state.users]);
 
-    // Filter hobbies based on search term
+  
     const filteredHobbies = availableHobbies.filter(hobby =>
         hobby.toLowerCase().includes(searchTerm.toLowerCase())
     );

@@ -18,7 +18,7 @@ export const Sidebar: React.FC = () => {
     }}>
       <h3 style={{ marginBottom: '20px', color: '#333' }}>Hobby Manager</h3>
 
-      {/* Add New Hobby */}
+    
       <div style={{ marginBottom: '20px' }}>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
           Add New Hobby
@@ -67,7 +67,7 @@ export const Sidebar: React.FC = () => {
         )}
       </div>
 
-      {/* Search */}
+  
       <div style={{ marginBottom: '16px' }}>
         <input
           type="text"
@@ -226,7 +226,7 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Drag Instructions */}
+    
       <div style={{
         marginTop: '20px',
         padding: '15px',
