@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { useState } from "react";
 import useApp from "../../contexts/useApp";
 import { CustomNodeType } from "../../types/CustomNodeType";
-
+import { useEffect } from "react";
 function useCustomNode({ data, selected, id }:CustomNodeType) {
   const { state, dispatch } = useApp();
   const [isDragOver, setIsDragOver] = useState(false);
@@ -131,7 +131,10 @@ function useCustomNode({ data, selected, id }:CustomNodeType) {
         : '0 4px 12px rgba(0, 0, 0, 0.15)',
     zIndex: isDragOver ? 1000 : 1,
   };
+    
+    useEffect(() => {
 
+    }, [state.users.length,state])
   const getScoreColor = () => {
     if (data.popularityScore > 7) return '#ff4757';
     if (data.popularityScore > 4) return '#ffa502';

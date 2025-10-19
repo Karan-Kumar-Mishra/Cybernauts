@@ -72,9 +72,11 @@ function useFlow() {
             setEdges(state.edges);
         }
     }, [state.nodes, state.edges, setNodes, setEdges]);
+    
     useEffect(() => {
 
-    }, [state.users.length])
+    }, [state.users.length,state])
+    
     const onConnect = useCallback(
         async (params: Connection) => {
             if (!params.source || !params.target) {

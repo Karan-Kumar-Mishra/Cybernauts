@@ -3,7 +3,6 @@ import ReactFlow, {
   MiniMap,
   Controls,
   Background,
-
 } from 'reactflow';
 
 import useFlow from '../hooks/ComponentsHooks/useFlow';

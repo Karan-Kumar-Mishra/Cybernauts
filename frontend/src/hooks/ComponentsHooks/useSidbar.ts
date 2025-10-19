@@ -30,6 +30,10 @@ function useSidbar() {
     useEffect(() => {
         loadAvailableHobbies();
     }, [state.users]);
+        
+    useEffect(() => {
+
+    }, [state.users.length,state])
 
   
     const filteredHobbies = availableHobbies.filter(hobby =>

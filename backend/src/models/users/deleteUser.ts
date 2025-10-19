@@ -1,6 +1,5 @@
 import pool from "../../config/pool";
-import { CreateUserRequest } from "../../types";
-import { User } from "../../types";
+
 import invalidateUserCache from "../Cache/invalidateUserCache";
 import { redisClient } from "../../config/redis";
 async function deleteUser(id: string): Promise<boolean> {

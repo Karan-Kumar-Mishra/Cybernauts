@@ -3,6 +3,7 @@ import { CreateUserRequest } from '../../interfaces/CreateUserRequest';
 import { apiService } from '../../services/apiService';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { useEffect } from 'react';
 
 function useUserMangement() {
     const { state, dispatch } = useApp();
@@ -123,6 +124,10 @@ function useUserMangement() {
         if (Array.isArray(friends)) return friends.length;
         return 0;
     };
+        
+        useEffect(() => {
+    
+        }, [state.users.length,state])
     return {
         state, isCreating, setIsCreating, handleCreateUser, handleDeleteUser, newHobby, setNewHobby,
         addHobby, removeHobby, formatPopularityScore, getHobbiesDisplay, getFriendsCount, formData, setFormData
