@@ -67,7 +67,7 @@ describe('User API Logic Tests', () => {
     const usersResponse = await request(app).get('/api/users');
     const user1 = usersResponse.body.find((u: any) => u.id === userId1);
     const user2 = usersResponse.body.find((u: any) => u.id === userId2);
-  }, 10000);
+  });
 
 
   test('Should prevent user deletion when user has active relationships', async () => {
@@ -80,7 +80,7 @@ describe('User API Logic Tests', () => {
     if (response.status === 409 || response.status === 400) {
       expect(response.body.error).toMatch(/active relationships|cannot.*delete|friend/);
     }
-  }, 10000);
+  });
 
 
   test('Should prevent duplicate relationships (circular friendship prevention)', async () => {
@@ -94,7 +94,7 @@ describe('User API Logic Tests', () => {
     if (response.status === 409) {
       expect(response.body.error).toMatch(/already exists|duplicate|already.friend/);
     }
-  }, 10000);
+  });
 
   afterAll(async () => {
 
@@ -149,5 +149,5 @@ describe('User API Logic Tests', () => {
       console.warn('Cleanup warning:', error);
 
     }
-  }, 15000);
+  });
 });

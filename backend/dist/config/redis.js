@@ -21,18 +21,30 @@ class RedisClient {
             console.log('Redis Client Connected');
             this.isConnected = true;
         });
-        this.client.on('disconnect', () => {
+        this.client.on('end', () => {
             console.log('Redis Client Disconnected');
             this.isConnected = false;
         });
     }
     async connect() {
         if (!this.isConnected) {
-            await this.client.connect();
+            try {
+                await this.client.connect();
+            }
+            catch (error) {
+                console.error('Redis connection failed:', error);
+                throw error;
+            }
+        }
+    }
+    async ensureConnected() {
+        if (!this.client.isOpen) {
+            await this.connect();
         }
     }
     async set(key, value, expireInSeconds) {
         try {
+            await this.ensureConnected();
             const stringValue = JSON.stringify(value);
             if (expireInSeconds) {
                 await this.client.setEx(key, expireInSeconds, stringValue);
@@ -48,6 +60,7 @@ class RedisClient {
     }
     async get(key) {
         try {
+            await this.ensureConnected();
             const value = await this.client.get(key);
             return value ? JSON.parse(value) : null;
         }
@@ -58,6 +71,7 @@ class RedisClient {
     }
     async del(key) {
         try {
+            await this.ensureConnected();
             await this.client.del(key);
         }
         catch (error) {
@@ -67,6 +81,7 @@ class RedisClient {
     }
     async exists(key) {
         try {
+            await this.ensureConnected();
             const result = await this.client.exists(key);
             return result === 1;
         }
@@ -76,12 +91,12 @@ class RedisClient {
         }
     }
     async disconnect() {
-        if (this.isConnected) {
-            await this.client.disconnect();
+        if (this.client.isOpen) {
+            await this.client.quit(); // Use quit instead of disconnect for graceful closure
         }
     }
     isReady() {
-        return this.isConnected;
+        return this.client.isOpen; // Use client.isOpen instead of isConnected
     }
 }
 exports.redisClient = new RedisClient();

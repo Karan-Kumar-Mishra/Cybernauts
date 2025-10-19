@@ -9,7 +9,7 @@ const UserServiceInstance_1 = __importDefault(require("../config/UserServiceInst
 const getAllUsers_1 = __importDefault(require("./Users/getAllUsers"));
 const createUser_1 = __importDefault(require("./Users/createUser"));
 const updateUser_1 = __importDefault(require("./Users/updateUser"));
-const deleteUser_1 = __importDefault(require("./Users/deleteUser"));
+const deleteUser_1 = require("./Users/deleteUser");
 const createRelationship_1 = __importDefault(require("./Relationship/createRelationship"));
 const removeRelationship_1 = __importDefault(require("./Relationship/removeRelationship"));
 const getAllHobbies_1 = __importDefault(require("./Hobbies/getAllHobbies"));
@@ -21,7 +21,7 @@ class UserController {
         this.getAllUsers = getAllUsers_1.default;
         this.createUser = createUser_1.default;
         this.updateUser = updateUser_1.default;
-        this.deleteUser = deleteUser_1.default;
+        this.deleteUser = deleteUser_1.deleteUser;
         this.createRelationship = createRelationship_1.default;
         this.removeRelationship = removeRelationship_1.default;
         this.addHobby = addHobby_1.default;

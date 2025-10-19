@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 class RedisClient {
-  private client: any;
+  public client: any;
   private isConnected: boolean = false;
 
   constructor() {
@@ -22,7 +22,7 @@ class RedisClient {
       this.isConnected = true;
     });
 
-    this.client.on('disconnect', () => {
+    this.client.on('end', () => {
       console.log('Redis Client Disconnected');
       this.isConnected = false;
     });
@@ -30,12 +30,24 @@ class RedisClient {
 
   async connect(): Promise<void> {
     if (!this.isConnected) {
-      await this.client.connect();
+      try {
+        await this.client.connect();
+      } catch (error) {
+        console.error('Redis connection failed:', error);
+        throw error;
+      }
+    }
+  }
+
+  async ensureConnected(): Promise<void> {
+    if (!this.client.isOpen) {
+      await this.connect();
     }
   }
 
   async set(key: string, value: any, expireInSeconds?: number): Promise<void> {
     try {
+      await this.ensureConnected();
       const stringValue = JSON.stringify(value);
       if (expireInSeconds) {
         await this.client.setEx(key, expireInSeconds, stringValue);
@@ -50,6 +62,7 @@ class RedisClient {
 
   async get(key: string): Promise<any> {
     try {
+      await this.ensureConnected();
       const value = await this.client.get(key);
       return value ? JSON.parse(value) : null;
     } catch (error) {
@@ -60,6 +73,7 @@ class RedisClient {
 
   async del(key: string): Promise<void> {
     try {
+      await this.ensureConnected();
       await this.client.del(key);
     } catch (error) {
       console.error('Redis delete error:', error);
@@ -69,6 +83,7 @@ class RedisClient {
 
   async exists(key: string): Promise<boolean> {
     try {
+      await this.ensureConnected();
       const result = await this.client.exists(key);
       return result === 1;
     } catch (error) {
@@ -78,13 +93,13 @@ class RedisClient {
   }
 
   async disconnect(): Promise<void> {
-    if (this.isConnected) {
-      await this.client.disconnect();
+    if (this.client.isOpen) {
+      await this.client.quit(); // Use quit instead of disconnect for graceful closure
     }
   }
 
   isReady(): boolean {
-    return this.isConnected;
+    return this.client.isOpen; // Use client.isOpen instead of isConnected
   }
 }
 

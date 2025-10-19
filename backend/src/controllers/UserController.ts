@@ -4,7 +4,7 @@ import UserServiceInstance from '../config/UserServiceInstance';
 import getAllUsers from './Users/getAllUsers';
 import createUser from './Users/createUser';
 import updateUser from './Users/updateUser';
-import deleteUser from './Users/deleteUser';
+import {deleteUser} from './Users/deleteUser';
 import createRelationship from './Relationship/createRelationship';
 import removeRelationship from './Relationship/removeRelationship';
 import getAllHobbies from './Hobbies/getAllHobbies';

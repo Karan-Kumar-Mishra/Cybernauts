@@ -1,23 +1,9 @@
-import { Request,Response } from "express";
-import UserServiceInstance from "../../config/UserServiceInstance";
-async function deleteUser(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const success = await UserServiceInstance().deleteUser(id);
+import { redisClient } from '../../config/redis';
 
-      if (!success) {
-        res.status(404).json({ error: 'User not found' });
-        return;
-      }
-
-      res.status(204).send();
-    } catch (error: any) {
-      console.error('Error deleting user:', error);
-      if (error.message.includes('active relationships')) {
-        res.status(409).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'Internal server error' });
-      }
-    }
-  };
-  export default deleteUser;
+export async function deleteUser(userId: string) {
+  try {
+    await redisClient.del(`user:${userId}`);
+  } catch (error:any) {
+    throw new Error(`Failed to delete user: ${error.message}`);
+  }
+}
