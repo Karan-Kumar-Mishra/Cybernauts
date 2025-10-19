@@ -2,7 +2,7 @@ import { redisClient } from "../../config/redis";
 async function invalidateGraphCache(): Promise<void> {
     const cacheKeys = ['graph:data', 'users:all'];
 
-    console.log('Invalidating graph cache...');
+ 
 
     for (const key of cacheKeys) {
         try {

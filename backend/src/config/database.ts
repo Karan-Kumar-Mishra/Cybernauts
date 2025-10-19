@@ -6,11 +6,10 @@ export const initializeDatabase = async (): Promise<void> => {
     
     console.log('Testing database connection with SSL...');
 
-    // Test connection first
+
     const result = await client.query('SELECT NOW()');
     console.log('Database connection successful at:', result.rows[0].now);
 
-    // Users table
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -23,7 +22,6 @@ export const initializeDatabase = async (): Promise<void> => {
       )
     `);
 
-    // Relationships table (for friendships)
     await client.query(`
       CREATE TABLE IF NOT EXISTS relationships (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -35,7 +33,7 @@ export const initializeDatabase = async (): Promise<void> => {
       )
     `);
 
-    // Hobbies table (for global hobby list)
+   
     await client.query(`
       CREATE TABLE IF NOT EXISTS hobbies (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -44,7 +42,7 @@ export const initializeDatabase = async (): Promise<void> => {
       )
     `);
 
-    // Create indexes for better performance
+   
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_relationships_user_id ON relationships(user_id);
       CREATE INDEX IF NOT EXISTS idx_relationships_friend_id ON relationships(friend_id);

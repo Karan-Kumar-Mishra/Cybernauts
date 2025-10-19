@@ -4,7 +4,6 @@ import { redisClient } from "../../config/redis";
 async function getGraphData(): Promise<any> {
     const cacheKey = 'graph:data';
 
-    // Try cache first
     try {
         if (redisClient.isReady()) {
             const cachedGraph = await redisClient.get(cacheKey);
@@ -17,9 +16,9 @@ async function getGraphData(): Promise<any> {
         console.warn('Redis cache miss for graph data');
     }
 
-    console.log('🔄 Fetching fresh graph data from database');
 
-    // Get all users with their calculated popularity scores
+
+
     const usersResult = await pool.query(`
     SELECT 
       id,
@@ -32,9 +31,9 @@ async function getGraphData(): Promise<any> {
   `);
 
     const users = usersResult.rows;
-    console.log(`👥 Found ${users.length} users in database`);
+   
 
-    // Get all relationships - FIXED: Remove the WHERE clause that filters relationships
+   
     const relationshipsResult = await pool.query(`
     SELECT 
       user_id as source,
@@ -43,7 +42,6 @@ async function getGraphData(): Promise<any> {
     ORDER BY user_id, friend_id
   `);
 
-    console.log(`🔗 Found ${relationshipsResult.rows.length} relationships in database:`);
 
     if (relationshipsResult.rows.length > 0) {
         relationshipsResult.rows.forEach((rel: any) => {
@@ -53,7 +51,7 @@ async function getGraphData(): Promise<any> {
         console.log('   No relationships found in database');
     }
 
-    // Generate positions for nodes
+   
     const nodes = users.map((user: any, index: number) => {
         const gridSize = Math.ceil(Math.sqrt(users.length));
         const row = Math.floor(index / gridSize);
@@ -78,10 +76,9 @@ async function getGraphData(): Promise<any> {
         };
     });
 
-    // Create edges - ensure we don't create duplicates
     const edgeMap = new Map();
     const edges = relationshipsResult.rows.map((rel: any, index: number) => {
-        // Create a unique key for the edge to avoid duplicates
+       
         const edgeKey = [rel.source, rel.target].sort().join('-');
 
         if (!edgeMap.has(edgeKey)) {
@@ -95,17 +92,16 @@ async function getGraphData(): Promise<any> {
             };
         }
         return null;
-    }).filter(Boolean); // Remove null entries
+    }).filter(Boolean); 
 
-    console.log(`🎯 Final graph data: ${nodes.length} nodes, ${edges.length} edges`);
 
     const graphData = { nodes, edges };
 
-    // Cache the graph data
+   
     try {
         if (redisClient.isReady()) {
             await redisClient.set(cacheKey, graphData, CACHE_TTL);
-            console.log('✅ Graph data cached successfully');
+            console.log('Graph data cached successfully');
         }
     } catch (error) {
         console.warn('Failed to cache graph data');

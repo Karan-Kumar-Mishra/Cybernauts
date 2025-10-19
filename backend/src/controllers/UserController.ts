@@ -26,15 +26,14 @@ export class UserController {
   
   debugDatabaseState = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Get all users
+
       const usersResult = await pool.query('SELECT id, username FROM users');
       const users = usersResult.rows;
 
-      // Get all relationships
+   
       const relationshipsResult = await pool.query('SELECT user_id, friend_id FROM relationships');
       const relationships = relationshipsResult.rows;
 
-      // Get table counts
       const usersCount = await pool.query('SELECT COUNT(*) FROM users');
       const relationshipsCount = await pool.query('SELECT COUNT(*) FROM relationships');
 

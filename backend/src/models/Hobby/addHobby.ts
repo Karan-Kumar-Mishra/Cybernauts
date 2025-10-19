@@ -5,8 +5,6 @@ async function addHobby(name: string): Promise<void> {
         'INSERT INTO hobbies (name) VALUES ($1) ON CONFLICT (name) DO NOTHING',
         [name]
     );
-
-    // Invalidate relevant caches
     await invalidateUserCache();
 }
 export default addHobby;

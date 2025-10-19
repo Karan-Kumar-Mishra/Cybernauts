@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const UserController_1 = require("../controllers/UserController");
+const router = (0, express_1.Router)();
+const userController = new UserController_1.UserController();
+router.get('/users', userController.getAllUsers);
+router.post('/users', userController.createUser);
+router.put('/users/:id', userController.updateUser);
+router.delete('/users/:id', userController.deleteUser);
+router.post('/users/:id/link', userController.createRelationship);
+router.delete('/users/:id/unlink', userController.removeRelationship);
+router.get('/graph', userController.getGraphData);
+router.get('/hobbies', userController.getAllHobbies);
+router.post('/hobbies', userController.addHobby);
+router.delete('/hobbies', userController.removeHobby);
+exports.default = router;

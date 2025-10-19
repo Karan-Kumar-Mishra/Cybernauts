@@ -19,11 +19,11 @@ async function removeRelationship(userId: string, friendId: string): Promise<voi
         throw error;
     }
 
-    // Update popularity scores
+
     await updatePopularityScore(userId);
     await updatePopularityScore(friendId);
 
-    // Invalidate cache
+
     await invalidateUserCache();
     await redisClient.del(`user:${userId}`);
     await redisClient.del(`user:${friendId}`);

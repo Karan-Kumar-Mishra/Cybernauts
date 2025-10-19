@@ -14,7 +14,7 @@ function startCluster() {
   }
   cluster.on('exit', (worker, code, signal) => {
     console.log(`Worker ${worker.process.pid} died`);
-    cluster.fork(); // Replace the dead worker
+    cluster.fork(); 
   });
 } else {
   const initializeWorker = async () => {
@@ -31,7 +31,7 @@ function startCluster() {
     }
   };
 
-  initializeWorker();
+ // initializeWorker();
 }
   
 }
