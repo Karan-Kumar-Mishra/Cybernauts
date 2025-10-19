@@ -30,8 +30,8 @@ export class UserService {
   removeHobby = removeHobby
 
   validateUserData = validateUserData
-  validateHobbies=validateHobbies
-getGraphData=getGraphData
+  validateHobbies = validateHobbies
+  getGraphData = getGraphData
 
 
 

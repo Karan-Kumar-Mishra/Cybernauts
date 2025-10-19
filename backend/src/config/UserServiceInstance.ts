@@ -1,8 +1,12 @@
 import { UserService } from "../services/UserService";
 
-let userService: UserService;
-userService = new UserService();
-function UserServiceInstance() {
+let userService: UserService | undefined;
+
+function UserServiceInstance(): UserService {
+    if (!userService) {
+        userService = new UserService();
+    }
     return userService;
 }
+
 export default UserServiceInstance;

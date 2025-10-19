@@ -36,7 +36,7 @@ function startCluster() {
                 process.exit(1);
             }
         };
-        // initializeWorker();
+        initializeWorker();
     }
 }
 exports.default = startCluster;
