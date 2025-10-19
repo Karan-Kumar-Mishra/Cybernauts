@@ -56,7 +56,6 @@ describe('User API Logic Tests', () => {
   }, 10000);
 
   test('Popularity score should be calculated correctly when users are linked', async () => {
-    // Link users with shared hobbies
     const linkResponse = await request(app)
       .post(`/api/users/${userId1}/link`)
       .send({ friendId: userId2 });
@@ -64,19 +63,18 @@ describe('User API Logic Tests', () => {
 
     expect([201,400, 409]).toContain(linkResponse.status);
 
-    const usersResponse = await request(app).get('/api/users');
-    const user1 = usersResponse.body.find((u: any) => u.id === userId1);
-    const user2 = usersResponse.body.find((u: any) => u.id === userId2);
+
+
   });
 
 
   test('Should prevent user deletion when user has active relationships', async () => {
     const response = await request(app).delete(`/api/users/${userId1}`);
     
-    // Should return 409 or 400 (depending on implementation)
+
     expect([409, 400]).toContain(response.status);
     
-    // Check for error message about active relationships
+
     if (response.status === 409 || response.status === 400) {
       expect(response.body.error).toMatch(/active relationships|cannot.*delete|friend/);
     }
