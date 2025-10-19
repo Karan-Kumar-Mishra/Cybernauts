@@ -6,7 +6,6 @@ describe('User API Tests', () => {
   let userId2: string;
 
   beforeAll(async () => {
-    // Wait for app to initialize
     await new Promise(resolve => setTimeout(resolve, 1000));
   });
 
@@ -55,7 +54,7 @@ describe('User API Tests', () => {
     
     expect(response.status).toBe(201);
 
-    // Check if popularity scores were updated
+
     const usersResponse = await request(app).get('/api/users');
     const user1 = usersResponse.body.find((u: any) => u.id === userId1);
     const user2 = usersResponse.body.find((u: any) => u.id === userId2);
@@ -79,7 +78,7 @@ describe('User API Tests', () => {
   });
 
   afterAll(async () => {
-    // Clean up test users
+
     if (userId1) {
       await request(app).delete(`/api/users/${userId1}`);
     }

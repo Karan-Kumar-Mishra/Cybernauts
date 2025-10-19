@@ -1,5 +1,5 @@
-import { GraphNode } from "./GraphNode";
-import { GraphEdge } from "./GraphEdge";
+import  GraphNode  from "./GraphNode";
+import  GraphEdge  from "./GraphEdge";
 import User from "./User";
 interface AppState {
   users: User[];

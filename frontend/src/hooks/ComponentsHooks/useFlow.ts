@@ -1,4 +1,6 @@
-import { CustomNode, HighScoreNode, LowScoreNode } from "../../components/CustomNode";
+import { CustomNode } from "../../components/CustomNode";
+import { HighScoreNode } from "../../components/HighScoreNode";
+import { LowScoreNode } from "../../components/LowScoreNode";
 import { useEffect, useCallback } from "react";
 import { useNodesState, useEdgesState, useReactFlow } from "reactflow";
 import { apiService } from "../../services/apiService";
@@ -7,6 +9,8 @@ import useApp from "../../contexts/useApp";
 import CustomEdge from "../../components/CustomEdge";
 import { Edge } from "reactflow";
 import { Connection } from "reactflow";
+import { NodeMouseHandler } from "reactflow";
+import GraphNode from "../../interfaces/GraphNode";
 
 const nodeTypes = {
     default: CustomNode,
@@ -23,7 +27,7 @@ function useFlow() {
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const { project } = useReactFlow();
-    
+
     const loadGraphData = async () => {
         try {
             dispatch({ type: 'SET_LOADING', payload: true });
@@ -70,7 +74,7 @@ function useFlow() {
     }, [state.nodes, state.edges, setNodes, setEdges]);
 
     const onConnect = useCallback(
-        async (params: Connection) => {           
+        async (params: Connection) => {
             if (!params.source || !params.target) {
                 toast.error('Cannot create connection - missing nodes');
                 return;
@@ -120,9 +124,9 @@ function useFlow() {
         [state.users, dispatch]
     );
 
- 
+
     const removeEdge = async (edge: Edge) => {
-        
+
         const sourceUser = state.users.find(u => u.id === edge.source);
         const targetUser = state.users.find(u => u.id === edge.target);
 
@@ -178,7 +182,7 @@ function useFlow() {
         [state.users, dispatch, setNodes, setEdges]
     );
 
-  
+
     const onEdgeContextMenu = useCallback(
         async (event: React.MouseEvent, edge: Edge) => {
             event.preventDefault();
@@ -200,7 +204,7 @@ function useFlow() {
         [state.users, dispatch, setNodes, setEdges]
     );
 
-  
+
     useEffect(() => {
         const handleEdgeDelete = async (event: CustomEvent) => {
             const { edgeId } = event.detail;
@@ -209,9 +213,10 @@ function useFlow() {
                 await removeEdge(edgeToDelete);
             }
         };
-        window.addEventListener('edgeDelete', handleEdgeDelete as EventListener);
+        window.addEventListener('edgeDelete', handleEdgeDelete as unknown as EventListener);
+
         return () => {
-            window.removeEventListener('edgeDelete', handleEdgeDelete as EventListener);
+            window.removeEventListener('edgeDelete', handleEdgeDelete as unknown as EventListener);
         };
     }, [edges, state.users, dispatch, setNodes, setEdges]);
 
@@ -229,16 +234,8 @@ function useFlow() {
             window.removeEventListener('keydown', handleKeyPress);
         };
     }, [state.selectedNode]);
-
-    const onConnectStart = useCallback((event: any, params: any) => {
-        console.log('🔵 Connection start:', params);
-    }, []);
-
-    const onConnectEnd = useCallback((event: any) => {
-        console.log('🔴 Connection end:', event);
-    }, []);
-
-    const onNodeDragStop = useCallback(async (event: React.MouseEvent, node: Node) => {
+    const onNodeDragStop: NodeMouseHandler = useCallback(async (event, node) => {
+        console.log(event)
         setNodes((nds) =>
             nds.map((n) =>
                 n.id === node.id
@@ -248,11 +245,16 @@ function useFlow() {
         );
     }, [setNodes]);
 
-    const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-        dispatch({ type: 'SET_SELECTED_NODE', payload: node });
+
+    const onNodeClick: NodeMouseHandler = useCallback((event, node) => {
+        console.log(event);
+        if (node.type === 'default' || node.type === 'highScore' || node.type === 'lowScore') {
+            dispatch({ type: 'SET_SELECTED_NODE', payload: node as GraphNode });
+        }
+
     }, [dispatch]);
 
-    const onPaneClick = useCallback((event: React.MouseEvent) => {
+    const onPaneClick = useCallback(() => {
         dispatch({ type: 'SET_SELECTED_NODE', payload: null });
     }, [dispatch]);
 
@@ -270,7 +272,7 @@ function useFlow() {
     }, []);
 
     return {
-        nodeTypes, state, onConnect, onConnectEnd, onConnectStart, onDragOver, onEdgeClick,
+        nodeTypes, state, onConnect, onDragOver, onEdgeClick,
         onNodeClick, onNodeDragStop, onPaneClick, onDrop, edgeTypes, onEdgeContextMenu, onEdgeDoubleClick,
         nodes, onNodesChange, onEdgesChange, edges
     };

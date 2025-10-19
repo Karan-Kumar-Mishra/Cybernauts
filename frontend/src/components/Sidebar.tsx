@@ -3,7 +3,7 @@ import useSidbar from "../hooks/ComponentsHooks/useSidbar";
 export const Sidebar: React.FC = () => {
 
   const { handleAddHobby, handleDragEnd, handleDragOver, handleDragStart,
-    handleKeyPress, handleDrop, handleRemoveHobby, filteredHobbies, dispatch, state,
+    handleKeyPress, handleDrop, handleRemoveHobby, filteredHobbies, 
     searchTerm, setSearchTerm, isLoading, draggedHobby, newHobby,setNewHobby, loadAvailableHobbies } = useSidbar();
 
 

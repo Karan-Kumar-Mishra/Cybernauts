@@ -4,7 +4,6 @@ import toast from "react-hot-toast";
 import { useState, useEffect } from "react";
 
 function useSidbar() {
-
     const { state, dispatch } = useApp();
     const [searchTerm, setSearchTerm] = useState('');
     const [newHobby, setNewHobby] = useState('');

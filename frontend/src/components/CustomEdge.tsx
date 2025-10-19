@@ -10,7 +10,7 @@ const CustomEdge: React.FC<EdgeProps> = ({
   targetY,
   sourcePosition,
   targetPosition,
-  data,
+  
   selected,
 }) => {
   const [edgePath, labelX, labelY] = getBezierPath({
@@ -49,7 +49,7 @@ const CustomEdge: React.FC<EdgeProps> = ({
           }}
           className="nodrag nopan"
         >
-          {/* Delete button that appears when edge is selected */}
+      
           {selected && (
             <button
               onClick={(event) => onEdgeClick(event, id)}
@@ -73,7 +73,7 @@ const CustomEdge: React.FC<EdgeProps> = ({
             </button>
           )}
           
-          {/* Always show a small indicator */}
+   
           {!selected && (
             <div
               style={{

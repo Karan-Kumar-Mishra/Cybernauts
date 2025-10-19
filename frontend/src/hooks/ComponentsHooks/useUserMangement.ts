@@ -124,7 +124,7 @@ function useUserMangement() {
         return 0;
     };
     return {
-        state, isCreating, setIsCreating, handleCreateUser, handleDeleteUser, newHobby,
+        state, isCreating, setIsCreating, handleCreateUser, handleDeleteUser, newHobby, setNewHobby,
         addHobby, removeHobby, formatPopularityScore, getHobbiesDisplay, getFriendsCount, formData, setFormData
     }
 }

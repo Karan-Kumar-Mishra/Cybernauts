@@ -2,8 +2,9 @@ import useUserMangement from "../hooks/ComponentsHooks/useUserMangement";
 
 
 export const UserManagement: React.FC = () => {
-  const { state, isCreating, setIsCreating, handleCreateUser, handleDeleteUser,newHobby,
-    addHobby, removeHobby, formatPopularityScore, getHobbiesDisplay, getFriendsCount,formData,setFormData } = useUserMangement();
+  const { state, isCreating, setIsCreating, handleCreateUser, handleDeleteUser, newHobby,
+    addHobby, setNewHobby, removeHobby, formatPopularityScore, getHobbiesDisplay,
+    getFriendsCount, formData, setFormData } = useUserMangement();
 
   return (
     <div style={{

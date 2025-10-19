@@ -1,5 +1,4 @@
-/* Pulse animation for drop indicator */
-/* Enhanced drag and drop animations */
+
 @keyframes pulse {
   0% {
     transform: scale(1);
@@ -27,27 +26,26 @@
   }
 }
 
-/* Drag source styling */
+
 .drag-source {
   opacity: 0.6;
   transform: scale(0.95);
   transition: all 0.2s ease;
 }
 
-/* Drop target styling */
 .drop-target {
   animation: glow 1s infinite;
   border-color: #28a745 !important;
 }
 
-/* Prevent text selection during drag */
+
 .no-select {
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
 }
-/* React Flow node hover effects */
+
 .react-flow__node:hover {
   transform: scale(1.05);
   transition: transform 0.2s ease;

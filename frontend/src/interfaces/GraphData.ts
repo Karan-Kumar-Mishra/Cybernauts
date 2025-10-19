@@ -1,5 +1,6 @@
-import { GraphEdge } from "./GraphEdge";
-import { GraphNode } from "./GraphNode";
+
+import  GraphNode  from "./GraphNode";
+import GraphEdge from "./GraphEdge";
 export interface GraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
