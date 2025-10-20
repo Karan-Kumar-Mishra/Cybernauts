@@ -1,9 +1,9 @@
 import pool from "../../config/pool";
-
 import invalidateUserCache from "../Cache/invalidateUserCache";
 import { redisClient } from "../../config/redis";
 async function deleteUser(id: string): Promise<boolean> {
     // Check if user has relationships
+    console.log("try to delete user ")
     const relationshipsResult = await pool.query(
       'SELECT COUNT(*) FROM relationships WHERE user_id = $1 OR friend_id = $1',
       [id]
@@ -26,7 +26,7 @@ async function deleteUser(id: string): Promise<boolean> {
       await invalidateUserCache();
       await redisClient.del(`user:${id}`);
     }
-
+    console.log("try to delete user complete ")
     return deleted;
   }
   export default deleteUser;

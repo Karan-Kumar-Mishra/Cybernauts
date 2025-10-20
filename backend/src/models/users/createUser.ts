@@ -5,6 +5,7 @@ import invalidateUserCache from "../Cache/invalidateUserCache";
 
 async function createUser(userData: CreateUserRequest): Promise<User> {
     const { username, age, hobbies } = userData;
+    console.log("creating user into models..")
     const result = await pool.query(`
       INSERT INTO users (username, age, hobbies, popularity_score)
       VALUES ($1, $2, $3, $4)

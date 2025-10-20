@@ -14,7 +14,8 @@ function useUserMangement() {
         hobbies: []
     });
     const [newHobby, setNewHobby] = useState('');
-
+    
+    
     const handleCreateUser = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -58,16 +59,13 @@ function useUserMangement() {
         try {
             toast.loading('Removing the User...', { id: toastId });
             await apiService.deleteUser(userId);
-
-
             const graphData = await apiService.getGraphData();
             dispatch({ type: 'SET_GRAPH_DATA', payload: graphData });
-
-
             const users = await apiService.getAllUsers();
             dispatch({ type: 'SET_USERS', payload: users });
             toast.dismiss(toastId);
             toast.success('User deleted successfully');
+            
         } catch (error: any) {
             if (error.response?.status === 409) {
                 toast.dismiss(toastId);
@@ -127,7 +125,7 @@ function useUserMangement() {
         
         useEffect(() => {
     
-        }, [state.users.length,state])
+        }, [state.users.length,state,handleDeleteUser])
     return {
         state, isCreating, setIsCreating, handleCreateUser, handleDeleteUser, newHobby, setNewHobby,
         addHobby, removeHobby, formatPopularityScore, getHobbiesDisplay, getFriendsCount, formData, setFormData

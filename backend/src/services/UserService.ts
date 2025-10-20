@@ -28,11 +28,7 @@ export class UserService {
   addHobby = addHobby
   getAllHobbies = getAllHobbies
   removeHobby = removeHobby
-
   validateUserData = validateUserData
   validateHobbies = validateHobbies
   getGraphData = getGraphData
-
-
-
 }

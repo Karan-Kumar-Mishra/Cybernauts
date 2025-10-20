@@ -31,6 +31,9 @@ function useCustomNode({ data, selected, id }:CustomNodeType) {
       ? '0 8px 25px rgba(0, 123, 255, 0.3)'
       : '0 4px 12px rgba(0, 0, 0, 0.15)';
   };
+   useEffect(() => {
+
+    }, [state])
 
   const handleDrop = async (event: React.DragEvent) => {
     event.preventDefault();

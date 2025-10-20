@@ -66,17 +66,15 @@ function useFlow() {
         initializeData();
     }, []);
     useEffect(() => {
-        if (state.nodes.length > 0) {
+        if (state.nodes.length >= 0) {
             console.log('🔄 Syncing React Flow state with global state');
             setNodes(state.nodes);
             setEdges(state.edges);
         }
     }, [state.nodes, state.edges, setNodes, setEdges]);
-    
-    useEffect(() => {
 
-    }, [state.users.length,state])
-    
+
+
     const onConnect = useCallback(
         async (params: Connection) => {
             if (!params.source || !params.target) {
@@ -162,6 +160,7 @@ function useFlow() {
             }
         }
     };
+
 
 
     const onEdgeDoubleClick = useCallback(
@@ -274,7 +273,7 @@ function useFlow() {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'copy';
     }, []);
-
+   
     return {
         nodeTypes, state, onConnect, onDragOver, onEdgeClick,
         onNodeClick, onNodeDragStop, onPaneClick, onDrop, edgeTypes, onEdgeContextMenu, onEdgeDoubleClick,
